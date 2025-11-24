@@ -1,34 +1,38 @@
-use crossterm::event::{ read, Event::Key, KeyCode::Char }; 
-use crossterm::event::{ Event, KeyEvent, KeyModifiers };
+use crossterm::event::{
+    Event::{self, Key}, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read
+};
 
 /// The main text editor structure,
 /// responsible for managing the editor state and user interactions.
 mod terminal;
-use terminal::{ Terminal, Size, Position };
+use terminal::{ Terminal, Size, Position, Caret };
 
 /// Represents the main text editor.
+#[derive(Default)]
 pub struct Editor{
     should_quit: bool,
+
+    pub caret: Caret
 }
 
 impl Editor {
-    /// Creates a new instance of the `Editor`.
-    pub const fn new() -> Self {
-        Editor { should_quit: false }
+/// Creates a new instance of the `Editor`.
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    /// Runs the main loop of the editor.
-    /// 
-    /// ### Parameter:
-    /// None
-    /// 
-    /// ### Return Value:
-    /// a `Result` indicating success or failure.
-    /// 
-    /// ### Steps:
-    /// - Initializes the terminal
-    /// - Starts the REPL
-    /// - Terminates the terminal on exit.
+/// Runs the main loop of the editor.
+/// 
+/// ### Parameter:
+/// None
+/// 
+/// ### Return Value:
+/// a `Result` indicating success or failure.
+/// 
+/// ### Steps:
+/// - Initializes the terminal
+/// - Starts the REPL
+/// - Terminates the terminal on exit.
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         Terminal::initialize()?;
         let result = self.repl();
@@ -36,7 +40,7 @@ impl Editor {
         result
     }
     
-    /// The Read-Eval-Print Loop (REPL) for the editor.
+/// The Read-Eval-Print Loop (REPL) for the editor.
     fn repl(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         loop {
             // Refresh the screen
@@ -49,49 +53,66 @@ impl Editor {
                 break;
             }
             let event = read()?;
-            self.evaluate_event(&event);
+            self.evaluate_event(&event)?;
         }
         Ok(())
     }
 
-    /// Refreshes the terminal screen based on the current editor state.
+/// Refreshes the terminal screen based on the current editor state.
     fn refresh_screen(&self) -> Result<(), Box<dyn std::error::Error>> {
         // Hide the cursor to prevent flickering during updates
-        Terminal::hide_cursor()?;
+        Terminal::hide_caret()?;
+        Terminal::move_caret_to(Position::default())?;
 
         // Check if we should quit
         if self.should_quit {
             Terminal::clear_screen()?;
             Terminal::print("Goodbye!\r\n")?;
         }else {
-
             // Draw the rows
             Self::draw_rows()?;
             // Self::draw_version()?;
-            Terminal::move_cursor_to(Position::new(0, 0))?;
+            Terminal::move_caret_to(Position::new(
+                self.caret.get_col(),
+                self.caret.get_row()
+            ))?;
         }
 
         // Show the cursor again after updates
         // Execute all terminal commands
-        Terminal::show_cursor()?;
+        Terminal::show_caret()?;
         Terminal::execute()?;
 
         Ok(())
     }
 
-    /// Evaluates a key event and updates the editor state accordingly.
-    fn evaluate_event(&mut self, event: &Event) {
+/// Evaluates a key event and updates the editor state accordingly.
+    fn evaluate_event(&mut self, event: &Event) -> Result<(), Box<dyn std::error::Error>>{
         if let Key(KeyEvent {
-            code: Char('z'),
-            modifiers: KeyModifiers::CONTROL,
+            code,
+            modifiers,
+            kind: KeyEventKind::Press,
             ..
         }) = event {
-            self.should_quit = true;
-            return ;
+            match code {
+                KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => 
+                    self.should_quit = true,
+                KeyCode::Up
+                | KeyCode::Down
+                | KeyCode::Left
+                | KeyCode::Right
+                | KeyCode::PageDown
+                | KeyCode::PageUp
+                | KeyCode::Home
+                | KeyCode::End =>
+                    self.caret.move_caret(*code)?,
+                _ => (),
+            }
         }
+        Ok(())
     }
 
-    /// Draws the rows of the editor on the terminal screen.
+/// Draws the rows of the editor on the terminal screen.
     fn draw_rows() -> Result<(), Box<dyn std::error::Error>> {
         let Size{height, ..} = Terminal::get_size()?;
         for current_row in 0..height {
@@ -118,7 +139,7 @@ impl Editor {
 
         version_message.truncate(width);
 
-        Terminal::move_cursor_to(Position::new(0, height / 3 * 2))?;
+        Terminal::move_caret_to(Position::new(0, height / 3 * 2))?;
         Terminal::print(version_message.as_str())?;
         
         Ok(())
