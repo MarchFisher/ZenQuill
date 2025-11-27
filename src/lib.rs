@@ -5,7 +5,7 @@ use crossterm::event::{
 /// The main text editor structure,
 /// responsible for managing the editor state and user interactions.
 mod core;
-use core::{ Terminal, Size, Position, Cursor };
+use core::{ Terminal, View, Position, Cursor };
 
 /// Represents the main text editor.
 #[derive(Default)]
@@ -70,7 +70,7 @@ impl Editor {
             Terminal::print("Goodbye!\r\n")?;
         }else {
             // Draw the rows
-            Self::draw_rows()?;
+            View::render()?;
             // Self::draw_version()?;
             Terminal::move_caret_to(Position::new(
                 self.caret.get_col(),
@@ -112,37 +112,5 @@ impl Editor {
         Ok(())
     }
 
-/// Draws the rows of the editor on the terminal screen.
-    fn draw_rows() -> Result<(), Box<dyn std::error::Error>> {
-        let Size{height, ..} = Terminal::get_size()?;
-        for current_row in 0..height {
-            Terminal::print("~")?;
-            if current_row.saturating_add(1) < height {
-                Terminal::print("\r\n")?;
-            }
-        }
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    fn draw_version() -> Result<(), Box<dyn std::error::Error>> {
-        let version = env!("CARGO_PKG_VERSION");
-        let name = "ZenQuill";
-        let merrage = format!("{name} Editor v{version}");
-
-        let Size{height, width} = Terminal::get_size()?;
-        let width = width as usize;
-        let len = merrage.len();
-        let padding = if width > len { (width - len) / 2 } else { 0 };
-        let spaces = " ".repeat(padding.saturating_sub(1));
-        let mut version_message = format!("~{spaces}{merrage}{spaces}");
-
-        version_message.truncate(width);
-
-        Terminal::move_caret_to(Position::new(0, height / 3 * 2))?;
-        Terminal::print(version_message.as_str())?;
-        
-        Ok(())
-    }
 
 }
