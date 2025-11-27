@@ -4,15 +4,15 @@ use crossterm::event::{
 
 /// The main text editor structure,
 /// responsible for managing the editor state and user interactions.
-mod terminal;
-use terminal::{ Terminal, Size, Position, Caret };
+mod core;
+use core::{ Terminal, Size, Position, Cursor };
 
 /// Represents the main text editor.
 #[derive(Default)]
 pub struct Editor{
     should_quit: bool,
 
-    pub caret: Caret
+    pub caret: Cursor
 }
 
 impl Editor {

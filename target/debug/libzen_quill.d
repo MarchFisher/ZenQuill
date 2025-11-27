@@ -1,1 +1,0 @@
-C:\Users\Mar.Fisher\MyLib\ZenQuill\target\debug\libzen_quill.rlib: C:\Users\Mar.Fisher\MyLib\ZenQuill\src\lib.rs C:\Users\Mar.Fisher\MyLib\ZenQuill\src\terminal\caret.rs C:\Users\Mar.Fisher\MyLib\ZenQuill\src\terminal\mod.rs C:\Users\Mar.Fisher\MyLib\ZenQuill\src\terminal\terminal.rs
