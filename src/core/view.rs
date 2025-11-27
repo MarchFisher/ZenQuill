@@ -1,15 +1,26 @@
 use std::error::Error;
 
-use super::terminal::{ Size, Terminal };
 
-pub struct View;
+use super::terminal::{ Size, Terminal };
+use super::buffer::Buffer;
+
+#[derive(Default)]
+pub struct View{
+    buffer: Buffer
+}
 
 impl View {
 
 /// Draws the rows of the editor on the terminal screen.
-    pub fn render() -> Result<(), Box<dyn Error>> {
+    pub fn render(&self) -> Result<(), Box<dyn Error>> {
         let Size{height, ..} = Terminal::get_size()?;
         for current_row in 0..height {
+            Terminal::clear_line()?;
+            if let Some(line) = self.buffer.lines.get(current_row) {
+                Terminal::print(line)?;
+                Terminal::print("\r\n")?;
+                continue;
+            }
             if current_row == height / 3 * 2 {
                 Self::draw_version()?;
             }else {

@@ -61,6 +61,12 @@ impl Terminal {
         Ok(())
     }
 
+/// Clears current line
+    pub fn clear_line() -> Result<(), Box<dyn std::error::Error>> {
+        Self::queue_command(Clear(ClearType::CurrentLine))?;
+        Ok(())
+    }
+
 /// Hides the terminal caret.
 /// 
 /// Returns an error if the operation fails.

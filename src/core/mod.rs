@@ -1,6 +1,7 @@
 mod terminal;
 mod cursor;
 mod view;
+mod buffer;
 
 pub use terminal::Terminal;
 pub use terminal::Position;
@@ -8,3 +9,4 @@ pub use terminal::Position;
 pub use cursor::Cursor;
 
 pub use view::View;
+pub use buffer::Buffer;

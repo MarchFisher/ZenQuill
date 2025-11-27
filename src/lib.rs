@@ -12,7 +12,8 @@ use core::{ Terminal, View, Position, Cursor };
 pub struct Editor{
     should_quit: bool,
 
-    pub caret: Cursor
+    pub cursor: Cursor,
+    pub view: View
 }
 
 impl Editor {
@@ -70,11 +71,11 @@ impl Editor {
             Terminal::print("Goodbye!\r\n")?;
         }else {
             // Draw the rows
-            View::render()?;
+            self.view.render()?;
             // Self::draw_version()?;
             Terminal::move_caret_to(Position::new(
-                self.caret.get_col(),
-                self.caret.get_row()
+                self.cursor.get_col(),
+                self.cursor.get_row()
             ))?;
         }
 
@@ -105,7 +106,7 @@ impl Editor {
                 | KeyCode::PageUp
                 | KeyCode::Home
                 | KeyCode::End =>
-                    self.caret.move_caret(*code)?,
+                    self.cursor.move_caret(*code)?,
                 _ => (),
             }
         }
