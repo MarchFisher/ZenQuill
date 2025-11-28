@@ -20,7 +20,7 @@ impl Cursor {
         Self::default()
     }
 
-    pub fn move_caret(&mut self, key_code: KeyCode) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn move_cursor(&mut self, key_code: KeyCode) -> Result<(), Box<dyn std::error::Error>> {
         let Location {mut x, mut y} = self.location;
 
         let h = Terminal::get_size()?.height.saturating_sub(1);

@@ -1,11 +1,13 @@
 use crossterm::event::{
-    Event::{self, Key}, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read
+    Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read
 };
 
 /// The main text editor structure,
 /// responsible for managing the editor state and user interactions.
 mod core;
-use core::{ Terminal, View, Position, Cursor };
+use core::{ Terminal, Size, View, Position, Cursor };
+
+use std::error::Error;
 
 /// Represents the main text editor.
 #[derive(Default)]
@@ -34,15 +36,24 @@ impl Editor {
 /// - Initializes the terminal
 /// - Starts the REPL
 /// - Terminates the terminal on exit.
-    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
         Terminal::initialize()?;
+        self.handle_args()?;
         let result = self.repl();
         Terminal::terminate()?;
         result
     }
+
+    fn handle_args(&mut self) -> Result<(), Box<dyn Error>> {
+        let args: Vec<String> = std::env::args().collect();
+        if let Some(file_name) = args.get(1) {
+            self.view.load(file_name)?;
+        }
+        Ok(())
+    }
     
 /// The Read-Eval-Print Loop (REPL) for the editor.
-    fn repl(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    fn repl(&mut self) -> Result<(), Box<dyn Error>> {
         loop {
             // Refresh the screen
             // Check if we should quit
@@ -60,10 +71,10 @@ impl Editor {
     }
 
 /// Refreshes the terminal screen based on the current editor state.
-    fn refresh_screen(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn refresh_screen(&mut self) -> Result<(), Box<dyn Error>> {
         // Hide the cursor to prevent flickering during updates
         Terminal::hide_caret()?;
-        Terminal::move_caret_to(Position::default())?;
+        Terminal::move_cursor_to(Position::default())?;
 
         // Check if we should quit
         if self.should_quit {
@@ -73,9 +84,9 @@ impl Editor {
             // Draw the rows
             self.view.render()?;
             // Self::draw_version()?;
-            Terminal::move_caret_to(Position::new(
-                self.cursor.get_col(),
-                self.cursor.get_row()
+            Terminal::move_cursor_to(Position::new(
+                self.cursor.get_row(),
+                self.cursor.get_col()
             ))?;
         }
 
@@ -88,15 +99,15 @@ impl Editor {
     }
 
 /// Evaluates a key event and updates the editor state accordingly.
-    fn evaluate_event(&mut self, event: &Event) -> Result<(), Box<dyn std::error::Error>>{
-        if let Key(KeyEvent {
+    fn evaluate_event(&mut self, event: &Event) -> Result<(), Box<dyn Error>>{
+        if let Event::Key(KeyEvent {
             code,
             modifiers,
             kind: KeyEventKind::Press,
             ..
         }) = event {
             match code {
-                KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => 
+                KeyCode::Char('z') if *modifiers == KeyModifiers::CONTROL => 
                     self.should_quit = true,
                 KeyCode::Up
                 | KeyCode::Down
@@ -106,9 +117,13 @@ impl Editor {
                 | KeyCode::PageUp
                 | KeyCode::Home
                 | KeyCode::End =>
-                    self.cursor.move_caret(*code)?,
+                    self.cursor.move_cursor(*code)?,
                 _ => (),
             }
+        }else if let Event::Resize(width, height) =  event{
+            let width = *width as usize;
+            let height = *height as usize;
+            self.view.resize(Size { height, width });
         }
         Ok(())
     }

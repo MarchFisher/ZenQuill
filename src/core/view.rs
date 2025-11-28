@@ -1,35 +1,54 @@
 use std::error::Error;
 
-
-use super::terminal::{ Size, Terminal };
+use super::terminal::{ Size, Position, Terminal };
 use super::buffer::Buffer;
 
-#[derive(Default)]
 pub struct View{
-    buffer: Buffer
+    buffer: Buffer,
+    need_redraw: bool,
+    size: Size,
+}
+
+impl Default for View {
+    fn default() -> Self {
+        View { 
+            buffer: Buffer::default(), 
+            need_redraw: true, 
+            size: Terminal::get_size().unwrap_or_default()
+        }
+    }
 }
 
 impl View {
 
+    pub fn render_line(row: usize, line_text: &str) -> Result<(), Box<dyn Error>> {
+        Terminal::move_cursor_to(Position::new(row, 0))?;
+        Terminal::clear_line()?;
+        Terminal::print(line_text)?;
+        Ok(())
+    }
+
 /// Draws the rows of the editor on the terminal screen.
-    pub fn render(&self) -> Result<(), Box<dyn Error>> {
-        let Size{height, ..} = Terminal::get_size()?;
+    pub fn render(&mut self) -> Result<(), Box<dyn Error>> {
+        if !self.need_redraw {
+            return Ok(());
+        }
+        let Size{height, width} = Terminal::get_size()?;
+
         for current_row in 0..height {
-            Terminal::clear_line()?;
+            //truncate line
             if let Some(line) = self.buffer.lines.get(current_row) {
-                Terminal::print(line)?;
-                Terminal::print("\r\n")?;
-                continue;
-            }
-            if current_row == height / 3 * 2 {
-                Self::draw_version()?;
+                let truncated_line = line
+                    .get(0..width)
+                    .unwrap_or(&line);
+                Self::render_line(current_row, truncated_line)?;
             }else {
-                Self::draw_empty_row()?;
-            }
-            if current_row.saturating_add(1) < height {
-                Terminal::print("\r\n")?;
+                Self::render_line(current_row, "~")?;
             }
         }
+
+        self.need_redraw = false;
+
         Ok(())
     }
     
@@ -39,7 +58,7 @@ impl View {
     }
 
     #[allow(dead_code)]
-    fn draw_version() -> Result<(), Box<dyn std::error::Error>> {
+    fn draw_version() -> Result<(), Box<dyn Error>> {
         let version = env!("CARGO_PKG_VERSION");
         let name = "ZenQuill";
         let merrage = format!("{name} Editor v{version}");
@@ -55,5 +74,15 @@ impl View {
         Terminal::print(version_message.as_str())?;
         
         Ok(())
+    }
+
+    pub fn load(&mut self, file_name: &str) -> Result<(), Box<dyn Error>> {
+        self.buffer = Buffer::load(file_name)?;
+        Ok(())
+    }
+
+    pub fn resize(&mut self, new_size: Size) {
+        self.need_redraw = true;
+        self.size = new_size;
     }
 }

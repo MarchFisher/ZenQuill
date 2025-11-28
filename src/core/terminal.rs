@@ -9,7 +9,7 @@ use std::io::{stdout, Write};
 pub struct Terminal;
 
 /// Represents the size of the terminal window.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Size{
     pub height: usize,
     pub width: usize,
@@ -18,13 +18,13 @@ pub struct Size{
 /// Represents a position in the terminal window.
 #[derive(Clone, Copy, Default)]
 pub struct Position{
-    pub col: usize,
     pub row: usize,
+    pub col: usize,
 }
 
 impl Position {
     pub const fn new(x: usize, y: usize) -> Self {
-        Position { col: x, row: y }
+        Position { row: x, col: y }
     }
 }
 
@@ -35,7 +35,7 @@ impl Terminal {
     pub fn initialize() -> Result<(), Box<dyn std::error::Error>> {
         enable_raw_mode()?;
         Self::clear_screen()?;
-        Self::move_caret_to(Position::new(0, 0))?;
+        Self::move_cursor_to(Position::new(0, 0))?;
         Self::execute()?;
         Ok(())
     }
@@ -83,7 +83,7 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn move_caret_to(position: Position) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn move_cursor_to(position: Position) -> Result<(), Box<dyn std::error::Error>> {
         queue!(stdout(), MoveTo(position.col as u16, position.row as u16))?;
         Ok(())
     }
