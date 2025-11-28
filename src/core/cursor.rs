@@ -2,7 +2,7 @@ use std::cmp::min;
 
 use crossterm::event::KeyCode;
 
-use super::terminal::Terminal;
+use crate::core::Size;
 
 #[derive(Clone, Copy, Default)]
 struct Location {
@@ -20,11 +20,12 @@ impl Cursor {
         Self::default()
     }
 
-    pub fn move_cursor(&mut self, key_code: KeyCode) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn move_cursor(&mut self, key_code: KeyCode) {
         let Location {mut x, mut y} = self.location;
 
-        let h = Terminal::get_size()?.height.saturating_sub(1);
-        let w = Terminal::get_size()?.width.saturating_sub(1);
+        let Size{ height, width } = Size::new();
+        let h = height;
+        let w = width;
 
         match key_code {
             KeyCode::Up => 
@@ -42,7 +43,6 @@ impl Cursor {
             _ => ()
         }
         self.location = Location { x, y };
-        Ok(())
     }
 
     pub fn get_col(self) -> usize {

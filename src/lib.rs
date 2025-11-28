@@ -20,86 +20,73 @@ pub struct Editor{
 
 impl Editor {
 /// Creates a new instance of the `Editor`.
-    pub fn new() -> Self {
-        Self::default()
-    }
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        let current_hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            let _ = Terminal::terminate();
+            current_hook(panic_info);
+        }));
 
-/// Runs the main loop of the editor.
-/// 
-/// ### Parameter:
-/// None
-/// 
-/// ### Return Value:
-/// a `Result` indicating success or failure.
-/// 
-/// ### Steps:
-/// - Initializes the terminal
-/// - Starts the REPL
-/// - Terminates the terminal on exit.
-    pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
         Terminal::initialize()?;
-        self.handle_args()?;
-        let result = self.repl();
-        Terminal::terminate()?;
-        result
-    }
 
-    fn handle_args(&mut self) -> Result<(), Box<dyn Error>> {
+        let mut view = View::default();
         let args: Vec<String> = std::env::args().collect();
         if let Some(file_name) = args.get(1) {
-            self.view.load(file_name)?;
+            view.load(file_name)?;
         }
-        Ok(())
+
+        Ok(Self { should_quit: false, cursor: Cursor::default(), view })
     }
     
 /// The Read-Eval-Print Loop (REPL) for the editor.
-    fn repl(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn run(&mut self) {
         loop {
             // Refresh the screen
             // Check if we should quit
             // Read an event
             // Evaluate the event
 
-            self.refresh_screen()?;
+            self.refresh_screen();
             if self.should_quit {
                 break;
             }
-            let event = read()?;
-            self.evaluate_event(&event)?;
+            match read() {
+                Ok(event) => self.evaluate_event(&event),
+                Err(err) => {
+                    eprint!("Could not read event: {err:?}");
+                }
+            }
         }
-        Ok(())
     }
 
 /// Refreshes the terminal screen based on the current editor state.
-    fn refresh_screen(&mut self) -> Result<(), Box<dyn Error>> {
+    fn refresh_screen(&mut self) {
         // Hide the cursor to prevent flickering during updates
-        Terminal::hide_caret()?;
-        Terminal::move_cursor_to(Position::default())?;
+        let _ = Terminal::hide_caret();
+        let _ = Terminal::move_cursor_to(Position::default());
 
         // Check if we should quit
         if self.should_quit {
-            Terminal::clear_screen()?;
-            Terminal::print("Goodbye!\r\n")?;
+            let _ = Terminal::clear_screen();
+            let _ = Terminal::print("Goodbye!\r\n");
         }else {
             // Draw the rows
-            self.view.render()?;
+            let _ = self.view.render();
             // Self::draw_version()?;
-            Terminal::move_cursor_to(Position::new(
+            let _ = Terminal::move_cursor_to(Position::new(
                 self.cursor.get_row(),
                 self.cursor.get_col()
-            ))?;
+            ));
         }
 
         // Show the cursor again after updates
         // Execute all terminal commands
-        Terminal::show_caret()?;
-        Terminal::execute()?;
-
-        Ok(())
+        let _ = Terminal::show_caret();
+        let _ = Terminal::execute();
     }
 
 /// Evaluates a key event and updates the editor state accordingly.
-    fn evaluate_event(&mut self, event: &Event) -> Result<(), Box<dyn Error>>{
+    fn evaluate_event(&mut self, event: &Event) {
         if let Event::Key(KeyEvent {
             code,
             modifiers,
@@ -117,7 +104,7 @@ impl Editor {
                 | KeyCode::PageUp
                 | KeyCode::Home
                 | KeyCode::End =>
-                    self.cursor.move_cursor(*code)?,
+                    self.cursor.move_cursor(*code),
                 _ => (),
             }
         }else if let Event::Resize(width, height) =  event{
@@ -125,8 +112,16 @@ impl Editor {
             let height = *height as usize;
             self.view.resize(Size { height, width });
         }
-        Ok(())
     }
 
 
+}
+
+impl Drop for Editor {
+    fn drop(&mut self) {
+        let _ = Terminal::terminate();
+        if self.should_quit {
+            let _ = Terminal::print("Goodbye.\r\n");
+        }
+    }
 }

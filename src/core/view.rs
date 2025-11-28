@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use super::terminal::{ Size, Position, Terminal };
+use super::terminal::{ Size, Terminal };
 use super::buffer::Buffer;
 
 pub struct View{
@@ -14,26 +14,25 @@ impl Default for View {
         View { 
             buffer: Buffer::default(), 
             need_redraw: true, 
-            size: Terminal::get_size().unwrap_or_default()
+            size: Size::default()
         }
     }
 }
 
 impl View {
 
-    pub fn render_line(row: usize, line_text: &str) -> Result<(), Box<dyn Error>> {
-        Terminal::move_cursor_to(Position::new(row, 0))?;
-        Terminal::clear_line()?;
-        Terminal::print(line_text)?;
-        Ok(())
+    pub fn render_line(row: usize, line_text: &str) {
+        if let Err(err) = Terminal::print_line(row, line_text) {
+            eprintln!("Fail to Render: {err}");
+        }
     }
 
 /// Draws the rows of the editor on the terminal screen.
-    pub fn render(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn render(&mut self) {
         if !self.need_redraw {
-            return Ok(());
+            return ;
         }
-        let Size{height, width} = Terminal::get_size()?;
+        let Size{height, width} = self.size;
 
         for current_row in 0..height {
             //truncate line
@@ -41,15 +40,14 @@ impl View {
                 let truncated_line = line
                     .get(0..width)
                     .unwrap_or(&line);
-                Self::render_line(current_row, truncated_line)?;
+                Self::render_line(current_row, truncated_line);
             }else {
-                Self::render_line(current_row, "~")?;
+                Self::render_line(current_row, "~");
             }
         }
 
         self.need_redraw = false;
 
-        Ok(())
     }
     
     pub fn draw_empty_row() -> Result<(), Box<dyn Error>> {

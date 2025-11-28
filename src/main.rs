@@ -2,8 +2,9 @@
 use zen_quill::Editor;
 
 fn main() {
-    let mut editor = Editor::new();
-    if let Err(err) = editor.run() {
-        eprintln!("Application error: {err}");
+    match Editor::new() {
+        Ok(mut editor) => editor.run(),
+        Err(err) =>
+            eprintln!("Application error: {err}"),
     }
 }
