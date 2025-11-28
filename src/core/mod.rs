@@ -2,6 +2,7 @@ mod terminal;
 mod cursor;
 mod view;
 mod buffer;
+mod command;
 
 pub use terminal::Terminal;
 pub use terminal::Position;
