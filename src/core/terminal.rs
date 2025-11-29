@@ -12,6 +12,8 @@ use crossterm::{ queue, Command };
 use std::io::{stdout, Write};
 use std::error::Error;
 
+use super::cursor::Location;
+
 pub struct Terminal;
 
 /// Represents the size of the terminal window.
@@ -37,6 +39,13 @@ pub struct Position{
 impl Position {
     pub const fn new(x: usize, y: usize) -> Self {
         Position { row: x, col: y }
+    }
+}
+
+
+impl From<Location> for Position {
+    fn from(value: Location) -> Self {
+        Self { row: value.y, col: value.x }
     }
 }
 

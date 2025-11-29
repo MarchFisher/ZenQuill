@@ -5,9 +5,9 @@ use crossterm::event::KeyCode;
 use crate::core::Size;
 
 #[derive(Clone, Copy, Default)]
-struct Location {
-    x: usize,
-    y: usize,
+pub struct Location {
+    pub x: usize,
+    pub y: usize,
 }
 
 #[derive(Clone, Copy, Default)]
