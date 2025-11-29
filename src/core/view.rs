@@ -1,5 +1,9 @@
 use std::error::Error;
 
+use crate::core::Position;
+use crate::core::command::{Direction, EditorCommand};
+use crate::core::cursor::Location;
+
 use super::terminal::{ Size, Terminal };
 use super::buffer::Buffer;
 
@@ -7,6 +11,8 @@ pub struct View{
     buffer: Buffer,
     need_redraw: bool,
     size: Size,
+    location: Location,
+    scroll_offset: Location,
 }
 
 impl Default for View {
@@ -14,7 +20,9 @@ impl Default for View {
         View { 
             buffer: Buffer::default(), 
             need_redraw: true, 
-            size: Size::default()
+            size: Size::default(),
+            location: Location::default(),
+            scroll_offset: Location::default(),
         }
     }
 }
@@ -28,19 +36,25 @@ impl View {
     }
 
 /// Draws the rows of the editor on the terminal screen.
+/// 
+/// `truncated_line` is **NOT VERY SAFE**
     pub fn render(&mut self) {
         if !self.need_redraw {
             return ;
         }
         let Size{height, width} = self.size;
+        let top = self.scroll_offset.y;
 
         for current_row in 0..height {
             //truncate line
-            if let Some(line) = self.buffer.lines.get(current_row) {
-                let truncated_line = line
-                    .get(0..width)
-                    .unwrap_or(&line);
+            if let Some(line) = self.buffer.lines.get(current_row.saturating_add(top)) {
+
+                let left = self.scroll_offset.x;
+                let right = self.scroll_offset.x.saturating_add(width);
+
+                let truncated_line = line.get(left..right);
                 Self::render_line(current_row, truncated_line);
+
             }else {
                 Self::render_line(current_row, "~");
             }
@@ -49,10 +63,15 @@ impl View {
         self.need_redraw = false;
 
     }
-    
-    pub fn draw_empty_row() -> Result<(), Box<dyn Error>> {
-        Terminal::print("~")?;
-        Ok(())
+
+    pub fn handle_command(&mut self, command: EditorCommand) {
+        match command {
+            EditorCommand::Resize(size) => 
+                self.resize(size),
+            EditorCommand::Move(direction) => 
+                self.move_text_location(&direction),
+            EditorCommand::Quit => (),
+        }
     }
 
     #[allow(dead_code)]
@@ -75,12 +94,67 @@ impl View {
     }
 
     pub fn load(&mut self, file_name: &str) -> Result<(), Box<dyn Error>> {
-        self.buffer = Buffer::load(file_name)?;
+        if let Ok(buffer) = Buffer::load(file_name) {
+            self.buffer = buffer;
+            self.need_redraw = true;
+        }
         Ok(())
     }
 
+    pub fn move_text_location(&mut self, direction: &Direction) {
+        let Location {mut x, mut y} = self.location;
+        let Size{ height, width } = self.size;
+
+        let h = height;
+        let w = width;
+
+        match direction {
+            Direction::Up           =>  y = y.saturating_sub(1),
+            Direction::Left         =>  x = x.saturating_sub(1),
+            Direction::Down         =>  y = y.saturating_add(1),
+            Direction::Right        =>  x = x.saturating_add(1),
+            Direction::PageUp       =>  y = 0,
+            Direction::PageDown     =>  y = h.saturating_sub(1),
+            Direction::Home         =>  x = 0,
+            Direction::End          =>  x = w.saturating_sub(1),
+        }
+        self.location = Location { x, y };
+        self.scroll_location_into_view()
+    }
+
     pub fn resize(&mut self, new_size: Size) {
-        self.need_redraw = true;
         self.size = new_size;
+        self.scroll_location_into_view();
+        self.need_redraw = true;
+    }
+
+    pub fn scroll_location_into_view(&mut self) {
+        let Location { x, y } = self.location;
+        let Size { height, width } = self.size;
+
+        // Scroll vertically
+        if y < self.scroll_offset.y {
+            self.scroll_offset.y = y;
+            self.need_redraw = true;
+        } else if y >= self.scroll_offset.y.saturating_add(height) {
+            self.scroll_offset.y = y.saturating_sub(height).saturating_add(1);
+            self.need_redraw = true;
+        }
+
+        //Scroll horizontally
+        if x < self.scroll_offset.x {
+            self.scroll_offset.x = x;
+            self.need_redraw = true;
+        } else if x >= self.scroll_offset.x.saturating_add(width) {
+            self.scroll_offset.x = x.saturating_sub(width).saturating_add(1);
+            self.need_redraw = true;
+        }
+    }
+
+    pub fn get_position(&self) -> Position {
+        Position::new(
+            self.location.y.saturating_sub(self.scroll_offset.y),
+            self.location.x.saturating_sub(self.scroll_offset.x),
+        )
     }
 }

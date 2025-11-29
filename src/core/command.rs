@@ -2,6 +2,7 @@ use crossterm::event::{ Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers };
 use super::terminal::Size;
 use std::convert::TryFrom;
 
+#[derive(PartialEq)]
 pub enum Direction {
     Up,
     Down,
@@ -13,6 +14,7 @@ pub enum Direction {
     End,
 }
 
+#[derive(PartialEq)]
 pub enum EditorCommand {
     Move(Direction),
     Resize(Size),

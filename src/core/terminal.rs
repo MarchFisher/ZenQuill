@@ -17,7 +17,7 @@ use super::cursor::Location;
 pub struct Terminal;
 
 /// Represents the size of the terminal window.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub struct Size{
     pub height: usize,
     pub width: usize,

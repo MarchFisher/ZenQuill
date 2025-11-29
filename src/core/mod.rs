@@ -12,4 +12,6 @@ pub use terminal::Size;
 pub use cursor::Cursor;
 
 pub use view::View;
+
+pub use command::EditorCommand;
 // pub use buffer::Buffer;

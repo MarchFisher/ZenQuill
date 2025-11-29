@@ -1,11 +1,11 @@
 use crossterm::event::{
-    Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read
+    Event, KeyEvent, KeyEventKind, read
 };
 
 /// The main text editor structure,
 /// responsible for managing the editor state and user interactions.
 mod core;
-use core::{ Terminal, Size, View, Position, Cursor };
+use core::{ Terminal, EditorCommand, View, Position, Cursor };
 
 use std::error::Error;
 
@@ -73,10 +73,7 @@ impl Editor {
             // Draw the rows
             let _ = self.view.render();
             // Self::draw_version()?;
-            let _ = Terminal::move_cursor_to(Position::new(
-                self.cursor.get_row(),
-                self.cursor.get_col()
-            ));
+            let _ = Terminal::move_cursor_to(self.view.get_position());
         }
 
         // Show the cursor again after updates
@@ -87,30 +84,25 @@ impl Editor {
 
 /// Evaluates a key event and updates the editor state accordingly.
     fn evaluate_event(&mut self, event: &Event) {
-        if let Event::Key(KeyEvent {
-            code,
-            modifiers,
-            kind: KeyEventKind::Press,
-            ..
-        }) = event {
-            match code {
-                KeyCode::Char('z') if *modifiers == KeyModifiers::CONTROL => 
-                    self.should_quit = true,
-                KeyCode::Up
-                | KeyCode::Down
-                | KeyCode::Left
-                | KeyCode::Right
-                | KeyCode::PageDown
-                | KeyCode::PageUp
-                | KeyCode::Home
-                | KeyCode::End =>
-                    self.cursor.move_cursor(*code),
-                _ => (),
+        let should_process = match event {
+            Event::Key(KeyEvent { kind, .. }) =>
+                kind == &KeyEventKind::Press,
+            Event::Resize(_, _) => true,
+            _ => false,
+        };
+        if should_process {
+            match EditorCommand::try_from(event) {
+                Ok(command) => {
+                    if command == EditorCommand::Quit {
+                        self.should_quit = true;
+                    } else {
+                        self.view.handle_command(command);
+                    }
+                },
+                Err(err) => {
+                    eprintln!("Could not handle command: {err}");
+                }
             }
-        }else if let Event::Resize(width, height) =  event{
-            let width = *width as usize;
-            let height = *height as usize;
-            self.view.resize(Size { height, width });
         }
     }
 
