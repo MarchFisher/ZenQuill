@@ -11,10 +11,11 @@ impl Line {
         Self { string: line_str.to_string() }
     }
 
-    pub fn get(&self, range: Range<usize>) -> String {
-        let start = range.start;
+/// **Not very safe**
+    pub fn get(&self, range: Range<usize>) -> &str {
+        let start = std::cmp::min(range.start, self.string.len());
         let end = std::cmp::min(range.end, self.string.len());
 
-        self.string.get(start..end).unwrap_or_default().to_string()
+        self.string.get(start..end).unwrap_or_default()
     }
 }
