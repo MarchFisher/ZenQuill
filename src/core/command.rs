@@ -19,10 +19,10 @@ pub enum EditorCommand {
     Quit,
 }
 
-impl TryFrom<Event> for EditorCommand {
+impl TryFrom<&Event> for EditorCommand {
     type Error = String;
 
-    fn try_from(event: Event) -> Result<Self, Self::Error> {
+    fn try_from(event: &Event) -> Result<Self, Self::Error> {
         match event {
             Event::Key(KeyEvent { 
                 code, 
@@ -44,8 +44,8 @@ impl TryFrom<Event> for EditorCommand {
                 }
             }
             Event::Resize(width, height) => Ok(Self::Resize(Size {
-                width: width as usize,
-                height: height as usize,
+                width: *width as usize,
+                height: *height as usize,
             })),
             _ => Err(format!("Unsupported event: {:?}", event)),
         }
