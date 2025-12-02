@@ -18,4 +18,8 @@ impl Line {
 
         self.string.get(start..end).unwrap_or_default()
     }
+
+    pub fn len(&self) -> usize {
+        self.string.len()
+    }
 }

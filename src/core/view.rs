@@ -3,9 +3,10 @@ use std::error::Error;
 use crate::core::Position;
 use crate::core::command::{Direction, EditorCommand};
 use crate::core::cursor::Location;
+use crate::core::line::Line;
 
-use super::terminal::{ Size, Terminal };
-use super::buffer::Buffer;
+use crate::core::terminal::{ Size, Terminal };
+use crate::core::buffer::Buffer;
 
 pub struct View{
     buffer: Buffer,
@@ -103,21 +104,34 @@ impl View {
 
     pub fn move_text_location(&mut self, direction: &Direction) {
         let Location {mut x, mut y} = self.location;
-        let Size{ height, width } = self.size;
+        let Size{ height, .. } = self.size;
 
         let h = height;
-        let w = width;
+        let c = self.buffer.lines.get(y).map_or(0, Line::len);
 
         match direction {
-            Direction::Up           =>  y = y.saturating_sub(1),
-            Direction::Left         =>  x = x.saturating_sub(1),
-            Direction::Down         =>  y = y.saturating_add(1),
-            Direction::Right        =>  x = x.saturating_add(1),
-            Direction::PageUp       =>  y = 0,
-            Direction::PageDown     =>  y = h.saturating_sub(1),
-            Direction::Home         =>  x = 0,
-            Direction::End          =>  x = w.saturating_sub(1),
+            Direction::Up        =>  y = y.saturating_sub(1),
+            Direction::Down      =>  y = y.saturating_add(1),
+            Direction::PageUp    =>  y = y.saturating_sub(h).saturating_sub(1),
+            Direction::PageDown  =>  y = y.saturating_add(h).saturating_sub(1),
+            Direction::Left      => {
+                if x > 0 { x = x.saturating_sub(1); }
+                else if y > 0 {
+                    y = y.saturating_sub(1);
+                    x = self.buffer.lines.get(y).map_or(0, Line::len);
+                }
+            }
+            Direction::Right     =>  {
+                if x < c { x = x.saturating_add(1); }
+                else if y < self.buffer.lines.len() {
+                    y = y.saturating_add(1);
+                    x = 0;
+                }
+            }
+            Direction::Home      =>  x = 0,
+            Direction::End       =>  x = c,
         }
+        x = self.buffer.lines.get(y).map_or(0, |line| std::cmp::min(line.len(), x));
         self.location = Location { x, y };
         self.scroll_location_into_view()
     }
