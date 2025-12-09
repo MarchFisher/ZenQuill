@@ -5,7 +5,7 @@ use crossterm::event::{
 /// The main text editor structure,
 /// responsible for managing the editor state and user interactions.
 mod core;
-use core::{ Terminal, EditorCommand, View, Position, Cursor };
+use core::{ Terminal, EditorCommand, View, Position };
 
 use std::error::Error;
 
@@ -14,7 +14,7 @@ use std::error::Error;
 pub struct Editor{
     should_quit: bool,
 
-    pub cursor: Cursor,
+    // pub cursor: Cursor,
     pub view: View
 }
 
@@ -32,10 +32,10 @@ impl Editor {
         let mut view = View::default();
         let args: Vec<String> = std::env::args().collect();
         if let Some(file_name) = args.get(1) {
-            view.load(file_name)?;
+            view.load(file_name);
         }
 
-        Ok(Self { should_quit: false, cursor: Cursor::default(), view })
+        Ok(Self { should_quit: false, view })
     }
     
 /// The Read-Eval-Print Loop (REPL) for the editor.
@@ -73,7 +73,7 @@ impl Editor {
             // Draw the rows
             let _ = self.view.render();
             // Self::draw_version()?;
-            let _ = Terminal::move_cursor_to(self.view.get_position());
+            let _ = Terminal::move_cursor_to(self.view.cursor_position());
         }
 
         // Show the cursor again after updates

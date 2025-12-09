@@ -12,7 +12,8 @@ use crossterm::{ queue, Command };
 use std::io::{stdout, Write};
 use std::error::Error;
 
-use super::cursor::Location;
+// use super::cursor::Location;
+use crate::core::Location;
 
 pub struct Terminal;
 
@@ -40,12 +41,19 @@ impl Position {
     pub const fn new(x: usize, y: usize) -> Self {
         Position { row: x, col: y }
     }
+
+    pub const fn saturating_sub(self, other: Self) -> Self {
+        Self {
+            row: self.row.saturating_sub(other.row),
+            col: self.col.saturating_sub(other.col),
+        }
+    }
 }
 
 
 impl From<Location> for Position {
     fn from(value: Location) -> Self {
-        Self { row: value.y, col: value.x }
+        Self { row: value.line_index, col: value.grapheme_index }
     }
 }
 

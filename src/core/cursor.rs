@@ -6,8 +6,8 @@ use crate::core::Size;
 
 #[derive(Clone, Copy, Default)]
 pub struct Location {
-    pub x: usize,
-    pub y: usize,
+    pub grapheme_index: usize,
+    pub line_index: usize,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -21,7 +21,7 @@ impl Cursor {
     }
 
     pub fn move_cursor(&mut self, key_code: KeyCode) {
-        let Location {mut x, mut y} = self.location;
+        let Location {grapheme_index: mut x, line_index: mut y} = self.location;
 
         let Size{ height, width } = Size::new();
         let h = height;
@@ -42,14 +42,14 @@ impl Cursor {
             KeyCode::End        =>  x = w,
             _ => ()
         }
-        self.location = Location { x, y };
+        self.location = Location { grapheme_index: x, line_index: y };
     }
 
     pub fn get_col(self) -> usize {
-        return self.location.x;
+        return self.location.grapheme_index;
     }
 
     pub fn get_row(self) -> usize {
-        return self.location.y;
+        return self.location.line_index;
     }
 }
