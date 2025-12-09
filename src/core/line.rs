@@ -95,4 +95,8 @@ impl Line {
         }
         width
     }
+
+    pub fn grapheme_count(&self) -> usize {
+        self.fragments.len()
+    }
 }

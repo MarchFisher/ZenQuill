@@ -2,7 +2,6 @@ use std::error::Error;
 
 use crate::core::Position;
 use crate::core::command::{Direction, EditorCommand};
-use crate::core::line::Line;
 
 use crate::core::terminal::{ Size, Terminal };
 use crate::core::buffer::Buffer;
@@ -123,37 +122,112 @@ impl View {
     }
 
     pub fn move_text_location(&mut self, direction: &Direction) {
-        let Location {grapheme_index: mut x, line_index: mut y} = self.text_location;
-        let Size{ height, .. } = self.size;
-
-        let h = height;
-        let c = self.buffer.lines.get(y).map_or(0, Line::len);
-
         match direction {
-            Direction::Up        =>  y = y.saturating_sub(1),
-            Direction::Down      =>  y = y.saturating_add(1),
-            Direction::PageUp    =>  y = y.saturating_sub(h).saturating_sub(1),
-            Direction::PageDown  =>  y = y.saturating_add(h).saturating_sub(1),
-            Direction::Left      => {
-                if x > 0 { x = x.saturating_sub(1); }
-                else if y > 0 {
-                    y = y.saturating_sub(1);
-                    x = self.buffer.lines.get(y).map_or(0, Line::len);
-                }
-            }
-            Direction::Right     =>  {
-                if x < c { x = x.saturating_add(1); }
-                else if y < self.buffer.lines.len() {
-                    y = y.saturating_add(1);
-                    x = 0;
-                }
-            }
-            Direction::Home      =>  x = 0,
-            Direction::End       =>  x = c,
+            Direction::Up        =>  self.move_up(),
+            Direction::Down      =>  self.move_down(),
+            Direction::PageUp    =>  self.move_page_up(),
+            Direction::PageDown  =>  self.move_page_down(),
+            Direction::Left      =>  self.move_left(),
+            Direction::Right     =>  self.move_right(),
+            Direction::Home      =>  self.move_home(),
+            Direction::End       =>  self.move_end(),
         }
-        x = self.buffer.lines.get(y).map_or(0, |line| std::cmp::min(line.len(), x));
-        self.text_location = Location { grapheme_index: x, line_index: y };
         self.scroll_location_into_view()
+    }
+
+    fn move_up(&mut self) {
+        self.text_location.line_index = self
+            .text_location
+            .line_index
+            .saturating_sub(1);
+        self.snap_to_valid_grapheme();
+    }
+
+    fn move_down(&mut self) {
+        self.text_location.line_index = self
+            .text_location
+            .line_index
+            .saturating_add(1);
+        self.snap_to_valid_grapheme();
+        self.snap_to_valid_line();
+    }
+
+    fn move_page_up(&mut self) {
+        let Size{ height, .. } = self.size;
+        self.text_location.line_index = self
+            .text_location
+            .line_index
+            .saturating_sub(height);
+        self.snap_to_valid_grapheme();
+    }
+
+    fn move_page_down(&mut self) {
+        let Size{ height, .. } = self.size;
+        self.text_location.line_index = self
+            .text_location
+            .line_index
+            .saturating_add(height);
+        self.snap_to_valid_grapheme();
+        self.snap_to_valid_line();
+    }
+
+    fn move_left(&mut self) {
+        if self.text_location.grapheme_index == 0 {
+            self.move_up();
+            self.move_end();
+        } else {
+            self.text_location.grapheme_index -= 1;
+        }
+    }
+
+    fn move_right(&mut self) {
+        let line_len = self
+            .buffer
+            .lines
+            .get(self.text_location.line_index)
+            .map_or(0, |line| line.len());
+        if self.text_location.grapheme_index >= line_len {
+            self.move_down();
+            self.move_home();
+        } else {
+            self.text_location.grapheme_index += 1;
+        }
+    }
+
+    fn move_home(&mut self) {
+        self.text_location.grapheme_index = 0;
+    }
+
+    fn move_end(&mut self) {
+        let line_len = self
+            .buffer
+            .lines
+            .get(self.text_location.line_index)
+            .map_or(0, |line| line.len());
+        self.text_location.grapheme_index = line_len;
+    }
+
+    // Ensures self.location.grapheme_index points to a valid grapheme index by snapping it to the left most grapheme if appropriate.
+    // Doesn't trigger scrolling.
+    fn snap_to_valid_grapheme(&mut self) {
+        self.text_location.grapheme_index = self
+            .buffer
+            .lines
+            .get(self.text_location.line_index)
+            .map_or(0, |line| {
+                std::cmp::min(
+                    line.grapheme_count(),
+                    self.text_location.grapheme_index,
+                )
+            });
+    }
+    // Ensures self.location.line_index points to a valid line index by snapping it to the bottom most line if appropriate.
+    // Doesn't trigger scrolling.
+    fn snap_to_valid_line(&mut self) {
+        self.text_location.line_index = std::cmp::min(
+            self.text_location.line_index, 
+            self.buffer.height(),
+        );
     }
 
     pub fn resize(&mut self, new_size: Size) {
@@ -185,13 +259,14 @@ impl View {
     }
 
     pub fn scroll_location_into_view(&mut self) {
-        let Location { grapheme_index: x, line_index: y } = self.text_location;
+        let Position { row, col } = self.text_location_to_position();
 
-        self.scroll_vertically(y);
-        self.scroll_horizontally(x);
+        self.scroll_vertically(row);
+        self.scroll_horizontally(col);
     }
 
     pub fn cursor_position(&self) -> Position {
-        Position::from(self.text_location).saturating_sub(self.scroll_offset)
+        self.text_location_to_position()
+            .saturating_sub(self.scroll_offset)
     }
 }
