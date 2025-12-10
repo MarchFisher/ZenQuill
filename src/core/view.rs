@@ -173,6 +173,9 @@ impl View {
 
     fn move_left(&mut self) {
         if self.text_location.grapheme_index == 0 {
+            if self.text_location.line_index == 0 {
+                return ;
+            }
             self.move_up();
             self.move_end();
         } else {
