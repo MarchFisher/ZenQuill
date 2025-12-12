@@ -91,22 +91,15 @@ impl Editor {
             _ => false,
         };
         if should_process {
-            match EditorCommand::try_from(event) {
-                Ok(command) => {
-                    if command == EditorCommand::Quit {
-                        self.should_quit = true;
-                    } else {
-                        self.view.handle_command(command);
-                    }
-                },
-                Err(err) => {
-                    eprintln!("Could not handle command: {err}");
+            if let Ok(command) = EditorCommand::try_from(event) {
+                if command == EditorCommand::Quit {
+                    self.should_quit = true;
+                } else {
+                    self.view.handle_command(command);
                 }
             }
         }
     }
-
-
 }
 
 impl Drop for Editor {

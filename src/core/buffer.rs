@@ -24,4 +24,15 @@ impl Buffer {
     pub fn height(&self) -> usize {
         self.lines.len()
     }
+
+    pub fn insert_char(&mut self, character: char, location: super::view::Location) {
+        if location.line_index > self.lines.len() {
+            return ;
+        }
+        if location.line_index == self.lines.len() {
+            self.lines.push(Line::from(&character.to_string()));
+        } else if let Some(line) = self.lines.get_mut(location.line_index) {
+            line.insert_char(character, location.grapheme_index);
+        }
+    }
 }

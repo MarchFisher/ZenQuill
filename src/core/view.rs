@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use crate::core::line::Line;
 use crate::core::Position;
 use crate::core::command::{Direction, EditorCommand};
 
@@ -82,26 +81,9 @@ impl View {
             EditorCommand::Move(direction) => 
                 self.move_text_location(&direction),
             EditorCommand::Quit => (),
+            EditorCommand::Insert(character) =>
+                self.insert_character(character),
         }
-    }
-
-    #[allow(dead_code)]
-    fn draw_version() -> Result<(), Box<dyn Error>> {
-        let version = env!("CARGO_PKG_VERSION");
-        let name = "ZenQuill";
-        let merrage = format!("{name} Editor v{version}");
-
-        let width = Terminal::get_size()?.width as usize;
-        let len = merrage.len();
-        let padding = if width > len { (width - len) / 2 } else { 0 };
-        let spaces = " ".repeat(padding.saturating_sub(1));
-        let mut version_message = format!("~{spaces}{merrage}");
-
-        version_message.truncate(width);
-
-        Terminal::print(version_message.as_str())?;
-        
-        Ok(())
     }
 
     pub fn load(&mut self, file_name: &str) {
@@ -231,6 +213,29 @@ impl View {
             self.text_location.line_index, 
             self.buffer.height(),
         );
+    }
+
+    pub fn insert_character(&mut self, character: char) {
+        let old_len = self
+            .buffer
+            .lines
+            .get(self.text_location.line_index)
+            .map_or(0, Line::grapheme_count);
+
+        self.buffer.insert_char(character, self.text_location);
+        
+        let new_len = self
+            .buffer
+            .lines
+            .get(self.text_location.line_index)
+            .map_or(0, Line::grapheme_count);
+
+        let grapheme_delta = new_len.saturating_sub(old_len);
+        if grapheme_delta > 0 {
+            //move right for an added grapheme (should be the regular case)
+            self.move_right();
+        }
+        self.need_redraw = true;
     }
 
     pub fn resize(&mut self, new_size: Size) {
