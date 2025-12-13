@@ -83,6 +83,10 @@ impl View {
             EditorCommand::Quit => (),
             EditorCommand::Insert(character) =>
                 self.insert_character(character),
+            EditorCommand::Backspace =>
+                self.backspace(),
+            EditorCommand::Delete =>
+                self.delete(),
         }
     }
 
@@ -276,5 +280,15 @@ impl View {
     pub fn cursor_position(&self) -> Position {
         self.text_location_to_position()
             .saturating_sub(self.scroll_offset)
+    }
+
+    pub fn backspace(&mut self) {
+        self.move_left();
+        self.delete();
+    }
+
+    pub fn delete(&mut self) {
+        self.buffer.delete_char(self.text_location);
+        self.need_redraw = true;
     }
 }

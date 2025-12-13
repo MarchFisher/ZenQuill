@@ -20,6 +20,8 @@ pub enum EditorCommand {
     Resize(Size),
     Quit,
     Insert(char),
+    Backspace,
+    Delete,
 }
 
 impl TryFrom<&Event> for EditorCommand {
@@ -48,6 +50,8 @@ impl TryFrom<&Event> for EditorCommand {
                     KeyCode::PageDown   => Ok(Self::Move(Direction::PageDown)),
                     KeyCode::Home       => Ok(Self::Move(Direction::Home    )),
                     KeyCode::End        => Ok(Self::Move(Direction::End     )),
+                    KeyCode::Backspace if modifiers.contains(KeyModifiers::NONE) => Ok(Self::Backspace),
+                    KeyCode::Delete    if modifiers.contains(KeyModifiers::NONE) => Ok(Self::Delete),
                     _ => Err(format!("Unsupported key: {:?}", code)),
                 }
             }
