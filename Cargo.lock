@@ -314,7 +314,7 @@ dependencies = [
 
 [[package]]
 name = "zen_quill"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "crossterm",
  "unicode-segmentation",

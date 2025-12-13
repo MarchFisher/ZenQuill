@@ -37,8 +37,18 @@ impl Buffer {
     }
 
     pub fn delete_char(&mut self, location: super::view::Location) {
-        if let Some(line) = self.lines.get_mut(location.line_index) {
-            line.delete(location.grapheme_index);
+        if let Some(line) = self.lines.get(location.line_index) {
+            if location.grapheme_index >= line.grapheme_count() && 
+               self.lines.len() > location.line_index.saturating_add(1) {
+
+                let next_line = self.lines.remove(location.line_index.saturating_add(1));
+                self.lines[location.line_index].append(&next_line);
+
+            } else if location.grapheme_index < line.grapheme_count() {
+
+                self.lines[location.line_index].delete(location.grapheme_index);
+                
+            }
         }
     }
 }
