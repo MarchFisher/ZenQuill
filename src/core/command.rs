@@ -35,23 +35,28 @@ impl TryFrom<&Event> for EditorCommand {
                 kind: KeyEventKind::Press, 
                 .. 
             }) => {
-                match code {
-                    KeyCode::Char('z') if modifiers.contains(KeyModifiers::CONTROL) => Ok(Self::Quit),
-                    KeyCode::Char(character) 
-                        if modifiers.contains(KeyModifiers::NONE) || 
-                           modifiers.contains(KeyModifiers::SHIFT) => {
-                            Ok(Self::Insert(*character))
-                        },
-                    KeyCode::Up         => Ok(Self::Move(Direction::Up      )),
-                    KeyCode::Down       => Ok(Self::Move(Direction::Down    )),
-                    KeyCode::Left       => Ok(Self::Move(Direction::Left    )),
-                    KeyCode::Right      => Ok(Self::Move(Direction::Right   )),
-                    KeyCode::PageUp     => Ok(Self::Move(Direction::PageUp  )),
-                    KeyCode::PageDown   => Ok(Self::Move(Direction::PageDown)),
-                    KeyCode::Home       => Ok(Self::Move(Direction::Home    )),
-                    KeyCode::End        => Ok(Self::Move(Direction::End     )),
-                    KeyCode::Backspace if modifiers.contains(KeyModifiers::NONE) => Ok(Self::Backspace),
-                    KeyCode::Delete    if modifiers.contains(KeyModifiers::NONE) => Ok(Self::Delete),
+                match (code, *modifiers) {
+                    (KeyCode::Char('z'), KeyModifiers::CONTROL) => Ok(Self::Quit),
+                    (
+                        KeyCode::Char(character), 
+                        KeyModifiers::NONE | 
+                        KeyModifiers::SHIFT,
+                    ) => Ok(Self::Insert(*character)),
+
+                    (KeyCode::Tab     , KeyModifiers::NONE) => Ok(Self::Insert('\t')),
+                    (KeyCode::Enter   , KeyModifiers::NONE) => Ok(Self::Insert('\n')),
+
+                    (KeyCode::Up      , KeyModifiers::NONE) => Ok(Self::Move(Direction::Up      )),
+                    (KeyCode::Down    , KeyModifiers::NONE) => Ok(Self::Move(Direction::Down    )),
+                    (KeyCode::Left    , KeyModifiers::NONE) => Ok(Self::Move(Direction::Left    )),
+                    (KeyCode::Right   , KeyModifiers::NONE) => Ok(Self::Move(Direction::Right   )),
+                    (KeyCode::PageUp  , KeyModifiers::NONE) => Ok(Self::Move(Direction::PageUp  )),
+                    (KeyCode::PageDown, KeyModifiers::NONE) => Ok(Self::Move(Direction::PageDown)),
+                    (KeyCode::Home    , KeyModifiers::NONE) => Ok(Self::Move(Direction::Home    )),
+                    (KeyCode::End     , KeyModifiers::NONE) => Ok(Self::Move(Direction::End     )),
+                    
+                    (KeyCode::Backspace, KeyModifiers::NONE) => Ok(Self::Backspace),
+                    (KeyCode::Delete   , KeyModifiers::NONE) => Ok(Self::Delete),
                     _ => Err(format!("Unsupported key: {:?}", code)),
                 }
             }

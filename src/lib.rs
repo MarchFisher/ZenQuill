@@ -69,7 +69,7 @@ impl Editor {
         if self.should_quit {
             let _ = Terminal::clear_screen();
             let _ = Terminal::print("Goodbye!\r\n");
-        }else {
+        } else {
             // Draw the rows
             let _ = self.view.render();
             // Self::draw_version()?;
