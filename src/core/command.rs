@@ -22,6 +22,8 @@ pub enum EditorCommand {
     Insert(char),
     Backspace,
     Delete,
+    Tab,
+    Enter,
 }
 
 impl TryFrom<&Event> for EditorCommand {
@@ -43,8 +45,8 @@ impl TryFrom<&Event> for EditorCommand {
                         KeyModifiers::SHIFT,
                     ) => Ok(Self::Insert(*character)),
 
-                    (KeyCode::Tab     , KeyModifiers::NONE) => Ok(Self::Insert('\t')),
-                    (KeyCode::Enter   , KeyModifiers::NONE) => Ok(Self::Insert('\n')),
+                    (KeyCode::Tab     , KeyModifiers::NONE) => Ok(Self::Tab),
+                    (KeyCode::Enter   , KeyModifiers::NONE) => Ok(Self::Enter),
 
                     (KeyCode::Up      , KeyModifiers::NONE) => Ok(Self::Move(Direction::Up      )),
                     (KeyCode::Down    , KeyModifiers::NONE) => Ok(Self::Move(Direction::Down    )),
@@ -54,7 +56,7 @@ impl TryFrom<&Event> for EditorCommand {
                     (KeyCode::PageDown, KeyModifiers::NONE) => Ok(Self::Move(Direction::PageDown)),
                     (KeyCode::Home    , KeyModifiers::NONE) => Ok(Self::Move(Direction::Home    )),
                     (KeyCode::End     , KeyModifiers::NONE) => Ok(Self::Move(Direction::End     )),
-                    
+
                     (KeyCode::Backspace, KeyModifiers::NONE) => Ok(Self::Backspace),
                     (KeyCode::Delete   , KeyModifiers::NONE) => Ok(Self::Delete),
                     _ => Err(format!("Unsupported key: {:?}", code)),

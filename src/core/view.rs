@@ -87,6 +87,10 @@ impl View {
                 self.backspace(),
             EditorCommand::Delete =>
                 self.delete(),
+            EditorCommand::Tab =>
+                self.insert_tab(),
+            EditorCommand::Enter =>
+                self.insert_newline(),
         }
     }
 
@@ -219,29 +223,6 @@ impl View {
         );
     }
 
-    pub fn insert_character(&mut self, character: char) {
-        let old_len = self
-            .buffer
-            .lines
-            .get(self.text_location.line_index)
-            .map_or(0, Line::grapheme_count);
-
-        self.buffer.insert_char(character, self.text_location);
-        
-        let new_len = self
-            .buffer
-            .lines
-            .get(self.text_location.line_index)
-            .map_or(0, Line::grapheme_count);
-
-        let grapheme_delta = new_len.saturating_sub(old_len);
-        if grapheme_delta > 0 {
-            //move right for an added grapheme (should be the regular case)
-            self.move_text_location(&Direction::Right);
-        }
-        self.need_redraw = true;
-    }
-
     pub fn resize(&mut self, new_size: Size) {
         self.size = new_size;
         self.scroll_location_into_view();
@@ -282,6 +263,30 @@ impl View {
             .saturating_sub(self.scroll_offset)
     }
 
+
+    pub fn insert_character(&mut self, character: char) {
+        let old_len = self
+            .buffer
+            .lines
+            .get(self.text_location.line_index)
+            .map_or(0, Line::grapheme_count);
+
+        self.buffer.insert_char(character, self.text_location);
+        
+        let new_len = self
+            .buffer
+            .lines
+            .get(self.text_location.line_index)
+            .map_or(0, Line::grapheme_count);
+
+        let grapheme_delta = new_len.saturating_sub(old_len);
+        if grapheme_delta > 0 {
+            //move right for an added grapheme (should be the regular case)
+            self.move_text_location(&Direction::Right);
+        }
+        self.need_redraw = true;
+    }
+
     pub fn backspace(&mut self) {
         if self.text_location.line_index     == 0 && 
            self.text_location.grapheme_index == 0 {
@@ -293,6 +298,21 @@ impl View {
 
     pub fn delete(&mut self) {
         self.buffer.delete_char(self.text_location);
+        self.need_redraw = true;
+    }
+
+    pub fn insert_tab(&mut self) {
+        let tab_size = 4;
+        for _ in 0..tab_size {
+            self.buffer.insert_char(' ', self.text_location);
+            self.text_location.grapheme_index += 1;    
+        }
+        self.need_redraw = true;
+    }
+
+    pub fn insert_newline(&mut self) {
+        self.buffer.insert_newline(self.text_location);
+        self.move_text_location(&Direction::Right);
         self.need_redraw = true;
     }
 }

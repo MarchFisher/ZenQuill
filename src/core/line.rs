@@ -19,13 +19,13 @@ impl GraphemeWidth {
     }
 }
 
-
 struct TextFragment {
     grapheme: String,
     rendered_width: GraphemeWidth,
     replacement: Option<char>,
 }
 
+#[derive(Default)]
 pub struct Line {
     fragments: Vec<TextFragment>,
 }
@@ -159,6 +159,13 @@ impl Line {
         let mut concat = self.to_string();
         concat.push_str(&other.to_string());
         self.fragments = Self::str_to_fragments(&concat);
+    }
+
+    pub fn split(&mut self, grapheme_index: usize) -> Self {
+        if grapheme_index >= self.fragments.len() {
+            return Self::default();
+        }
+        Self { fragments: self.fragments.split_off(grapheme_index) }
     }
 }
 

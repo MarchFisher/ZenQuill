@@ -51,4 +51,15 @@ impl Buffer {
             }
         }
     }
+
+    pub fn insert_newline(&mut self, location: super::view::Location) {
+        if location.line_index == self.lines.len() {
+            self.lines.push(Line::default());
+            return ;
+        }
+        if let Some(line) = self.lines.get_mut(location.line_index) {
+            let new_line = line.split(location.grapheme_index);
+            self.lines.insert(location.line_index.saturating_add(1), new_line);
+        }
+    }
 }
