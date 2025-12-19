@@ -24,6 +24,7 @@ pub enum EditorCommand {
     Delete,
     Tab,
     Enter,
+    Save,
 }
 
 impl TryFrom<&Event> for EditorCommand {
@@ -39,6 +40,8 @@ impl TryFrom<&Event> for EditorCommand {
             }) => {
                 match (code, *modifiers) {
                     (KeyCode::Char('z'), KeyModifiers::CONTROL) => Ok(Self::Quit),
+                    (KeyCode::Char('s'), KeyModifiers::CONTROL) => Ok(Self::Save),
+
                     (
                         KeyCode::Char(character), 
                         KeyModifiers::NONE | 

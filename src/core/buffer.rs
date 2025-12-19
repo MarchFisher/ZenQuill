@@ -1,12 +1,15 @@
 use std::error::Error;
 use std::fs::read_to_string;
+use std::fs::File;
+use std::io::Write;
 
 use crate::core::line::Line;
 
 /// buffer
 #[derive(Default)]
 pub struct Buffer {
-    pub lines: Vec<Line>
+    pub lines: Vec<Line>,
+    file_name: Option<String>,
 }
 
 impl Buffer {
@@ -18,7 +21,7 @@ impl Buffer {
             lines.push(Line::from(line));
         }
 
-        Ok(Self { lines })
+        Ok(Self { lines, file_name: Some(file_name.to_string()) })
     }
 
     pub fn height(&self) -> usize {
@@ -61,5 +64,15 @@ impl Buffer {
             let new_line = line.split(location.grapheme_index);
             self.lines.insert(location.line_index.saturating_add(1), new_line);
         }
+    }
+
+    pub fn save(&self) -> Result<(), Box<dyn Error>> {
+        if let Some(file_name) = &self.file_name {
+            let mut file = File::create(file_name)?;
+            for line in &self.lines {
+                writeln!(file, "{line}")?;
+            }
+        }
+        Ok(())
     }
 }

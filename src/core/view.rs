@@ -91,6 +91,8 @@ impl View {
                 self.insert_tab(),
             EditorCommand::Enter =>
                 self.insert_newline(),
+            EditorCommand::Save =>
+                self.save(),
         }
     }
 
@@ -314,5 +316,11 @@ impl View {
         self.buffer.insert_newline(self.text_location);
         self.move_text_location(&Direction::Right);
         self.need_redraw = true;
+    }
+
+    pub fn save(&mut self) {
+        if let Err(err) = self.buffer.save() {
+            eprintln!("Fail to Save: {err}");
+        }
     }
 }
